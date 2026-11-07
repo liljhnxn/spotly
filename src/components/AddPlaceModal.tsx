@@ -31,6 +31,55 @@ export function AddPlaceModal({
   const [previewError, setPreviewError] = useState(false);
   const [formError, setFormError] = useState("");
 
+  const samplePhotos = [
+    {
+      label: "⛩️ Shrine",
+      url: "https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=1200&q=80",
+    },
+    {
+      label: "🏔️ Nature",
+      url: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1200&q=80",
+    },
+    {
+      label: "🍽️ Dining",
+      url: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1200&q=80",
+    },
+    {
+      label: "🏨 Hotel",
+      url: "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80",
+    },
+    {
+      label: "💎 Hidden Gem",
+      url: "https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&w=1200&q=80",
+    },
+  ];
+
+  // Helper to transform share links (like Google Drive, Dropbox, Imgur) to direct image stream URLs
+  const transformToDirectImageUrl = (url: string): string => {
+    const trimmed = url.trim();
+    // Google Drive share link: drive.google.com/file/d/ID/...
+    const gDriveMatch = trimmed.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
+    if (gDriveMatch && gDriveMatch[1]) {
+      return `https://lh3.googleusercontent.com/d/${gDriveMatch[1]}`;
+    }
+    // Dropbox link: replace dl=0 with raw=1
+    if (trimmed.includes("dropbox.com") && trimmed.includes("dl=0")) {
+      return trimmed.replace("dl=0", "raw=1");
+    }
+    // Imgur page link: imgur.com/ID -> i.imgur.com/ID.jpg
+    const imgurMatch = trimmed.match(/^https?:\/\/(?:www\.)?imgur\.com\/([a-zA-Z0-9]+)$/);
+    if (imgurMatch && imgurMatch[1]) {
+      return `https://i.imgur.com/${imgurMatch[1]}.jpg`;
+    }
+    return trimmed;
+  };
+
+  const handleImageUrlChange = (val: string) => {
+    const transformed = transformToDirectImageUrl(val);
+    setImageUrl(transformed);
+    setPreviewError(false);
+  };
+
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -192,14 +241,26 @@ export function AddPlaceModal({
               <input
                 type="url"
                 value={imageUrl}
-                onChange={(e) => {
-                  setImageUrl(e.target.value);
-                  setPreviewError(false);
-                }}
-                placeholder="https://images.unsplash.com/photo-..."
+                onChange={(e) => handleImageUrlChange(e.target.value)}
+                placeholder="https://images.unsplash.com/photo-... or click a preset below"
                 className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-[#14202B] border border-spotly-card-border text-white text-sm placeholder-slate-500 focus:outline-none focus:border-spotly-primary transition-colors"
               />
               <ImageIcon className="w-4 h-4 text-spotly-muted absolute left-3 top-3 pointer-events-none" />
+            </div>
+
+            {/* Quick Photo Presets */}
+            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+              <span className="text-[11px] text-spotly-muted">Quick presets:</span>
+              {samplePhotos.map((preset) => (
+                <button
+                  type="button"
+                  key={preset.label}
+                  onClick={() => handleImageUrlChange(preset.url)}
+                  className="px-2 py-0.5 rounded-lg bg-spotly-card-border/60 hover:bg-spotly-primary/20 hover:text-spotly-primary text-slate-300 text-[11px] transition-colors border border-spotly-card-border"
+                >
+                  {preset.label}
+                </button>
+              ))}
             </div>
 
             {/* Live image preview thumbnail */}
@@ -214,12 +275,34 @@ export function AddPlaceModal({
                 <span className="absolute bottom-2 left-2 text-[10px] bg-black/70 text-white px-2 py-0.5 rounded font-medium">
                   Live Preview
                 </span>
+                <button
+                  type="button"
+                  onClick={() => setImageUrl("")}
+                  className="absolute top-2 right-2 text-[10px] bg-black/70 hover:bg-rose-900 text-white px-2 py-0.5 rounded transition-colors"
+                >
+                  Remove
+                </button>
               </div>
             )}
             {imageUrl.trim() && previewError && (
-              <p className="text-[11px] text-amber-400 mt-1">
-                Unable to preview image from this link. Make sure it is a direct HTTPS image URL.
-              </p>
+              <div className="mt-2.5 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-200 space-y-1.5">
+                <p className="font-semibold text-amber-300">
+                  ⚠️ Google Share / Webpage Link Detected
+                </p>
+                <p className="text-[11px] text-amber-200/90 leading-relaxed">
+                  Links starting with <code className="bg-amber-950/60 px-1 py-0.5 rounded text-amber-200">share.google/...</code> are Google search/webpage redirects, not raw image files (.jpg, .png, .webp).
+                </p>
+                <p className="text-[11px] text-amber-200/90 leading-relaxed">
+                  <strong>How to fix:</strong> In Google Images, right-click the photo and select <span className="text-white font-medium">"Copy Image Address"</span> (or choose one of the quick presets above).
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setImageUrl("")}
+                  className="text-[11px] underline text-spotly-primary hover:text-white"
+                >
+                  Clear this link
+                </button>
+              </div>
             )}
           </div>
 
