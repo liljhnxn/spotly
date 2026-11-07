@@ -63,9 +63,27 @@ export default function SpotlyApp() {
       if (type !== "loading") {
         setTimeout(() => {
           setToasts((prev) => prev.filter((t) => t.id !== id));
-        }, 7000);
+        }, 6000);
       }
       return id;
+    },
+    []
+  );
+
+  const updateToast = useCallback(
+    (
+      id: string,
+      updates: Partial<ToastMessage>
+    ) => {
+      setToasts((prev) =>
+        prev.map((t) => (t.id === id ? { ...t, ...updates } : t))
+      );
+
+      if (updates.type && updates.type !== "loading") {
+        setTimeout(() => {
+          setToasts((prev) => prev.filter((t) => t.id !== id));
+        }, 6000);
+      }
     },
     []
   );
@@ -236,8 +254,8 @@ export default function SpotlyApp() {
 
     const toastId = addToast(
       "loading",
-      "Submitting to Botchain...",
-      "Waiting for wallet signature and block confirmation."
+      "Confirm in Wallet...",
+      "Please sign the submission in MetaMask."
     );
     setActionProcessingId("submit");
 
@@ -255,34 +273,31 @@ export default function SpotlyApp() {
         ],
       });
 
-      dismissToast(toastId);
-      addToast(
-        "loading",
-        "Transaction Broadcasted",
-        "Confirming block on Botchain Testnet...",
-        hash
-      );
+      updateToast(toastId, {
+        type: "loading",
+        title: "Transaction Broadcasted",
+        message: "Confirming block on Botchain Testnet...",
+        txHash: hash,
+      });
 
       if (publicClient) {
         await publicClient.waitForTransactionReceipt({ hash });
       }
 
-      dismissToast(toastId);
-      addToast(
-        "success",
-        "Place Published!",
-        `"${formData.name}" is now live on Spotly!`,
-        hash
-      );
+      updateToast(toastId, {
+        type: "success",
+        title: "Place Published!",
+        message: `"${formData.name}" is now live on Spotly!`,
+        txHash: hash,
+      });
       refreshAll();
     } catch (err: any) {
       console.error(err);
-      dismissToast(toastId);
-      addToast(
-        "error",
-        "Submission Failed",
-        err?.shortMessage || err?.message || "User rejected or execution reverted."
-      );
+      updateToast(toastId, {
+        type: "error",
+        title: "Submission Failed",
+        message: err?.shortMessage || err?.message || "User rejected or execution reverted.",
+      });
       throw err;
     } finally {
       setActionProcessingId(null);
@@ -309,7 +324,7 @@ export default function SpotlyApp() {
     const toastId = addToast(
       "loading",
       `${actionLabel}...`,
-      "Submitting transaction to Botchain..."
+      "Waiting for signature in MetaMask..."
     );
 
     try {
@@ -321,26 +336,31 @@ export default function SpotlyApp() {
         args: [placeId],
       });
 
+      updateToast(toastId, {
+        type: "loading",
+        title: "Transaction Broadcasted",
+        message: "Confirming block on Botchain Testnet...",
+        txHash: hash,
+      });
+
       if (publicClient) {
         await publicClient.waitForTransactionReceipt({ hash });
       }
 
-      dismissToast(toastId);
-      addToast(
-        "success",
-        currentlyFavourited ? "Removed from Favourites" : "Saved to Favourites!",
-        `Place #${placeId.toString()} updated on-chain.`,
-        hash
-      );
+      updateToast(toastId, {
+        type: "success",
+        title: currentlyFavourited ? "Removed from Favourites" : "Saved to Favourites!",
+        message: `Place #${placeId.toString()} updated on-chain.`,
+        txHash: hash,
+      });
       refreshAll();
     } catch (err: any) {
       console.error(err);
-      dismissToast(toastId);
-      addToast(
-        "error",
-        "Favourite Action Failed",
-        err?.shortMessage || err?.message || "Transaction reverted."
-      );
+      updateToast(toastId, {
+        type: "error",
+        title: "Favourite Action Failed",
+        message: err?.shortMessage || err?.message || "Transaction reverted.",
+      });
     } finally {
       setActionProcessingId(null);
     }
@@ -358,7 +378,7 @@ export default function SpotlyApp() {
     const toastId = addToast(
       "loading",
       "Removing Place...",
-      "Removing your submission on-chain..."
+      "Waiting for signature in MetaMask..."
     );
 
     try {
@@ -369,26 +389,31 @@ export default function SpotlyApp() {
         args: [placeId],
       });
 
+      updateToast(toastId, {
+        type: "loading",
+        title: "Transaction Broadcasted",
+        message: "Removing your submission on-chain...",
+        txHash: hash,
+      });
+
       if (publicClient) {
         await publicClient.waitForTransactionReceipt({ hash });
       }
 
-      dismissToast(toastId);
-      addToast(
-        "success",
-        "Place Removed",
-        `Submission #${placeId.toString()} was removed from Spotly.`,
-        hash
-      );
+      updateToast(toastId, {
+        type: "success",
+        title: "Place Removed",
+        message: `Submission #${placeId.toString()} was removed from Spotly.`,
+        txHash: hash,
+      });
       refreshAll();
     } catch (err: any) {
       console.error(err);
-      dismissToast(toastId);
-      addToast(
-        "error",
-        "Removal Failed",
-        err?.shortMessage || err?.message || "Transaction reverted."
-      );
+      updateToast(toastId, {
+        type: "error",
+        title: "Removal Failed",
+        message: err?.shortMessage || err?.message || "Transaction reverted.",
+      });
     } finally {
       setActionProcessingId(null);
     }
